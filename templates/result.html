@@ -1,0 +1,6 @@
+{% if access_token %}
+    <p>Access Tok: {{ access_token }}</p>
+    <p>ID Token: {{ id_token }}</p>
+{% else %}
+    <p>{{ error }}</p>
+{% endif %}

@@ -1,35 +1,15 @@
-import requests
+# Define the URL with query parameters
+client_id = '173313288818-g2vhqrbrm79copjnheoi513pggf51dsm.apps.googleusercontent.com'  # Replace with your actual client ID
+client_secret = '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'  # Replace with your actual client secret
+authorization_code = '4%2F0AfJohXmene0ByrYXBbHL8_MCX3NsjPmAPuPFGr9g9lwymEzydAFuGjwessTmFCIYfJaPjg'  # Replace with your actual authorization code
 
-# Define the OAuth2 credentials
-client_id = '173313288818-ffl1o43k50drnqb6lf8v8jikee0tooqs.apps.googleusercontent.com'
-client_secret = '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'
-redirect_uri = 'https://accounts.google.com/o/oauth2/token'
+token_exchange_url = (
+        'https://oauth2.googleapis.com/token'
+        f'?client_id={client_id}'
+        f'&client_secret={client_secret}'
+        f'&code={authorization_code}'
+        f'&grant_type=authorization_code'
+        f'&redirect_uri=http://127.0.0.1:8000/rest/google/'
+    )
 
-# Define the authorization code you received from the OAuth2 authentication process
-authorization_code = '4%2F0AfJohXkKnfnFE_q4XoJea5MCoojqnvb2PeH2M5aOZENr6yeoxtdHRHLG_4GAEWFRhPixMQ'
-
-# Define the URL for token exchange
-token_url = 'https://accounts.google.com/o/oauth2/token'
-
-# Prepare the data for the POST request
-payload = {
-    'code': authorization_code,
-    'client_id': client_id,
-    'client_secret': client_secret,
-    'redirect_uri': redirect_uri,
-    'grant_type': 'authorization_code'
-}
-
-# Make the POST request to exchange the code for tokens
-response = requests.post(token_url, data=payload)
-
-# Check if the request was successful
-if response.status_code == 200:
-    token_data = response.json()
-    access_token = token_data.get('access_token')
-    id_token = token_data.get('id_token')
-    print(f'Access Token: {access_token}')
-    print(f'ID Token: {id_token}')
-else:
-    print(f'Error: {response.status_code}')
-    print(response.text)
+print(token_exchange_url)

@@ -5,14 +5,22 @@ from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from dj_rest_auth.registration.views import SocialLoginView
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
-from allauth.socialaccount.providers.oauth2.client import OAuth2Error
-from allauth.socialaccount.providers.oauth2.client import OAuth2Error
-from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.views.generic import RedirectView
 from django.contrib.auth.mixins import LoginRequiredMixin
 import jwt
 import json
 import requests
+from django.views import View
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.http import JsonResponse,HttpResponse
+from django.middleware.csrf import get_token
+from django.shortcuts import render
+from .forms import TokenExchangeForm
+import requests
+
+
 # Create your views here.
 
 class IndexViews(TemplateView):
@@ -108,11 +116,94 @@ class GoogleLoginView(SocialLoginView):
     client_class = OAuth2Client
 
 
+class GoogleOAuthAuthorizationView(View):
+    def get(self, request):
+        # Define the OAuth 2.0 parameters
+        scope = "openid"  # scopes
+        access_type = "offline"  # access type to "offline" for refresh tokens
+        include_granted_scopes = "true"  #  Include granted scopes in the response
+        response_type = "code"  #  authorization code and ID token
+        state = "state_parameter_passthrough_value"  # Optional: Protect against CSRF attacks
+        redirect_uri = "http://127.0.0.1:8000/rest/google/"  #  redirect URI
+        client_id = "173313288818-g2vhqrbrm79copjnheoi513pggf51dsm.apps.googleusercontent.com"  # Replace with your OAuth client ID
+
+        # Construct the authorization URL
+        authorization_url = (
+            "https://accounts.google.com/o/oauth2/v2/auth?"
+            f"scope={scope}&"
+            f"access_type={access_type}&"
+            f"include_granted_scopes={include_granted_scopes}&"
+            f"response_type={response_type}&"
+            f"state={state}&"
+            f"redirect_uri={redirect_uri}&"
+            f"client_id={client_id}"
+        )
+
+        # Redirect the user to the Google OAuth authorization URL
+        return redirect(authorization_url)
 
 
 
+class GoogleTokenExchangeView(APIView):
+    
+     def post(self, request):
+        # Define the token exchange URL
+        token_exchange_url = 'https://oauth2.googleapis.com/token?'
+
+        # Define the request data as form data
+        data = {
+            'code': '4%2F0AfJohXkX24kwl15mfDeLi_NfYMYdek6IZHUfKAeM-oFUU8iioC9GXwi38OT1ZFNIpU596w',
+            'client_id': '173313288818-g2vhqrbrm79copjnheoi513pggf51dsm.apps.googleusercontent.com',
+            'client_secret': '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',
+            'redirect_uri': 'http://127.0.0.1:8000/rest/google/',
+            'grant_type': 'authorization_code',
+        }
+
+        # Send the request to the Google token exchange endpoint
+        response = requests.post(token_exchange_url, data=data)
+
+        if response.status_code == 200:
+            token_data = response.json()
+            access_token = token_data.get('access_token')
+            id_token = token_data.get('id_token')
+            return Response({'access_token': access_token, 'id_token': id_token}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Token exchange failed'}, status=response.status_code)
 
 
+class TokenExchangeFormView(View):
+    def get(self, request):
+        return render(request, 'token_exchange_form.html')
+    
 
+def token_exchange_form(request):
 
+   # Define the URL with query parameters
+    client_id = '173313288818-g2vhqrbrm79copjnheoi513pggf51dsm.apps.googleusercontent.com'  #  client ID
+    client_secret = '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'  #  client secret
+    authorization_code = '4%2F0AfJohXk_ethxWzcsDIxh_9j1Re5JU5O7jZlCBFNmse8jpHAb4lilsRf9WgEQRVJMZRSJlg'  #  authorization code
 
+    token_exchange_url = (
+        'https://oauth2.googleapis.com/token'
+        f'?client_id={client_id}'
+        f'&client_secret={client_secret}'
+        f'&code={authorization_code}'
+        f'&grant_type=authorization_code'
+        f'&redirect_uri=http://127.0.0.1:8000/rest/google/'
+    )
+
+    # csrf_token = get_token(request)
+    
+    csrf_token = request.COOKIES.get('csrftoken')
+    
+
+    response = requests.post(token_exchange_url, headers={'X-CSRFToken': csrf_token})
+
+   
+    if response.status_code == 200:
+        token_data = response.json()
+        access_token = token_data.get('access_token')
+        id_token = token_data.get('id_token')
+        return JsonResponse({'access_token': access_token, 'id_token': id_token})
+    else:
+        return JsonResponse({'error': 'Token exchange failed'}, status=response.status_code)

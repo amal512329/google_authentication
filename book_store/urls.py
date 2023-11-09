@@ -17,17 +17,21 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from allauth.socialaccount.providers.facebook.views import FacebookOAuth2Adapter
-from app.views import FacebookLogin,GoogleLoginView,UserRedirectView 
+from app.views import FacebookLogin,GoogleLoginView,UserRedirectView ,GoogleOAuthAuthorizationView,token_exchange_form
 
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('',include('app.urls')),
+    path('',include('app.urls')),
     path('dj-rest-auth/', include('dj_rest_auth.urls')),
     path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
     path('dj-rest-auth/facebook/', FacebookLogin.as_view(), name='fb_login'),
     path("rest/google/", GoogleLoginView.as_view(), name="google_login"),
-     path("~redirect/", view=UserRedirectView.as_view(), name="redirect"),
+    path("~redirect/", view=UserRedirectView.as_view(), name="redirect"),  
+    path('google-auth/', GoogleOAuthAuthorizationView.as_view(), name='google-auth'),
+    path('google-token/',token_exchange_form,name="google-token"),
+    # path('token-exchange-form/', TokenExchangeFormView.as_view(), name='token-exchange-form'),
+    
    
 ]
